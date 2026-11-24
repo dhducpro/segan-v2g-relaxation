@@ -134,9 +134,16 @@ ABLATION_CAPACITY_LEVELS: Final = (465.0, 470.0, 475.0, 480.0, 490.0)
 ABLATION_TERMINAL_TARGETS: Final = (55.0, 60.0, 65.0, 70.0)
 
 OPSD_URL: Final = "https://data.open-power-system-data.org/time_series/2020-10-06/time_series_60min_singleindex.csv"
-OPSD_MONTH_CACHE: Final = Path("data/opsd_de_lu_2019_01.csv")
-OPSD_YEAR_CACHE: Final = Path("data/opsd_de_lu_2019.csv")
-OPSD_PROFILE_CACHE: Final = Path("data/opsd_de_lu_2019_01_24_profile.csv")
+# Support both the notebook folder in the repository and a staged replay directory.
+MODULE_DIR = Path(__file__).resolve().parent
+DATA_DIR = next(
+    (directory / "data" for directory in (MODULE_DIR, *MODULE_DIR.parents)
+     if (directory / "data" / "opsd_de_lu_2019.csv").is_file()),
+    MODULE_DIR / "data",
+)
+OPSD_MONTH_CACHE: Final = DATA_DIR / "opsd_de_lu_2019_01.csv"
+OPSD_YEAR_CACHE: Final = DATA_DIR / "opsd_de_lu_2019.csv"
+OPSD_PROFILE_CACHE: Final = DATA_DIR / "opsd_de_lu_2019_01_24_profile.csv"
 OPSD_COLUMNS: Final = [
     "utc_timestamp",
     "cet_cest_timestamp",
@@ -170,8 +177,11 @@ def build_base_case() -> EVData:
     return build_case_from_profile(PUBLIC_PROFILE_DATE, name="base")
 
 
-def build_case_from_profile(profile_date: str, name: str | None = None) -> EVData:
-    profile = load_public_profile(profile_date)
+def build_case_from_profile(
+    profile_date: str, name: str | None = None, *, profile: pd.DataFrame | None = None
+) -> EVData:
+    if profile is None:
+        profile = load_public_profile(profile_date)
     L = profile["station_baseload"].to_numpy(dtype=float)
 
     # The EV is parked from hour 11 to hour 21. Outside this window, x_t=y_t=0.
@@ -238,10 +248,11 @@ def parse_bool(value: str | bool) -> bool:
 def acn_cache_path(site: str, start_date: str, end_date: str, cache_path: str | None = None) -> Path:
     if cache_path:
         return Path(cache_path)
-    local_export = Path(f"{site}.csv")
-    if local_export.exists():
-        return local_export
-    return Path(f"data/acn_sessions_{site}_{start_date}_{end_date}.csv")
+    for directory in (Path.cwd(), DATA_DIR.parent):
+        local_export = directory / f"{site}.csv"
+        if local_export.is_file():
+            return local_export
+    return DATA_DIR / f"acn_sessions_{site}_{start_date}_{end_date}.csv"
 
 
 def acn_site_timezone(site: str) -> ZoneInfo:
@@ -750,7 +761,7 @@ def build_synthetic_fleet_case(
 def profile_cache_path(profile_date: str) -> Path:
     if profile_date == PUBLIC_PROFILE_DATE:
         return OPSD_PROFILE_CACHE
-    return Path(f"data/opsd_de_lu_{profile_date.replace('-', '_')}_profile.csv")
+    return DATA_DIR / f"opsd_de_lu_{profile_date.replace('-', '_')}_profile.csv"
 
 
 def load_public_profile(profile_date: str = PUBLIC_PROFILE_DATE) -> pd.DataFrame:
@@ -927,7 +938,7 @@ def solve_model(data: EVData, delta: float, policy: Policy) -> dict:
 
     problem = cp.Problem(cp.Minimize(objective), constraints)
     start_time = time.perf_counter()
-    solve_with_fallback(problem)
+    solve_cplex(problem)
     solve_time_sec = time.perf_counter() - start_time
 
     status = problem.status
@@ -937,6 +948,7 @@ def solve_model(data: EVData, delta: float, policy: Policy) -> dict:
         "policy_label": policy.label,
         "delta": delta,
         "status": status,
+        "solver": problem.solver_stats.solver_name,
         "objective": np.nan,
         "solve_time_sec": float(solve_time_sec),
     }
@@ -1075,18 +1087,7 @@ def solve_binary_complementarity_model(
 
     problem = cp.Problem(cp.Minimize(objective), constraints)
     start_time = time.perf_counter()
-    try:
-        solve_mixed_integer_with_fallback(problem, time_limit_sec=time_limit_sec)
-    except cp.SolverError as exc:
-        return {
-            "case": data.name,
-            "policy": f"binary_{policy.name}",
-            "policy_label": f"MIQP {policy.label}",
-            "delta": delta,
-            "status": f"solver_error: {exc}",
-            "objective": np.nan,
-            "solve_time_sec": float(time.perf_counter() - start_time),
-        }
+    solve_cplex(problem, time_limit_sec=time_limit_sec)
     solve_time_sec = time.perf_counter() - start_time
 
     base_result = {
@@ -1095,6 +1096,7 @@ def solve_binary_complementarity_model(
         "policy_label": f"MIQP {policy.label}",
         "delta": delta,
         "status": problem.status,
+        "solver": problem.solver_stats.solver_name,
         "objective": np.nan,
         "solve_time_sec": float(solve_time_sec),
     }
@@ -1162,7 +1164,7 @@ def solve_fleet_model(data: FleetData, delta: float, policy: Policy) -> dict:
 
     problem = cp.Problem(cp.Minimize(objective), constraints)
     start_time = time.perf_counter()
-    solve_fleet_with_fallback(problem)
+    solve_cplex(problem)
     solve_time_sec = time.perf_counter() - start_time
 
     status = problem.status
@@ -1174,6 +1176,7 @@ def solve_fleet_model(data: FleetData, delta: float, policy: Policy) -> dict:
         "policy_label": policy.label,
         "delta": delta,
         "status": status,
+        "solver": problem.solver_stats.solver_name,
         "objective": np.nan,
         "solve_time_sec": float(solve_time_sec),
         "decision_variables": int(2 * data.N * data.T + data.N * (data.T + 1)),
@@ -1251,7 +1254,7 @@ def solve_fleet_budgeted_model(data: FleetData, delta: float, gamma: float) -> d
 
     problem = cp.Problem(cp.Minimize(objective), constraints)
     start_time = time.perf_counter()
-    solve_fleet_with_fallback(problem)
+    solve_cplex(problem)
     return collect_fleet_result(
         data=data,
         problem=problem,
@@ -1316,7 +1319,7 @@ def solve_fleet_bernstein_model(data: FleetData, delta: float, epsilon: float) -
 
     problem = cp.Problem(cp.Minimize(objective), constraints)
     start_time = time.perf_counter()
-    solve_conic_with_fallback(problem)
+    solve_cplex(problem)
     return collect_fleet_result(
         data=data,
         problem=problem,
@@ -1363,6 +1366,7 @@ def collect_fleet_result(
         "epsilon": epsilon,
         "delta": delta,
         "status": status,
+        "solver": problem.solver_stats.solver_name,
         "objective": np.nan,
         "solve_time_sec": float(solve_time_sec),
         "decision_variables": decision_variables
@@ -1408,88 +1412,26 @@ def clean_array(value: np.ndarray | None, tol: float = 1.0e-5) -> np.ndarray:
     return arr
 
 
-def solve_with_fallback(problem: cp.Problem) -> None:
+def solve_cplex(problem: cp.Problem, time_limit_sec: float | None = None) -> None:
+    """Solve the CVXPY LP, QP, MIQP or second-order cone model with IBM CPLEX."""
+    parameters = {
+        "threads": 1,
+        "randomseed": 20261112,
+        "timelimit": 60.0 if time_limit_sec is None else float(time_limit_sec),
+        "simplex.tolerances.feasibility": 1e-9,
+        "simplex.tolerances.optimality": 1e-9,
+        "mip.tolerances.integrality": 1e-9,
+        "mip.tolerances.mipgap": 1e-9,
+        "barrier.convergetol": 1e-9,
+        "barrier.qcpconvergetol": 1e-9,
+    }
     try:
-        problem.solve(
-            solver=cp.OSQP,
-            eps_abs=1.0e-8,
-            eps_rel=1.0e-8,
-            max_iter=100000,
-            polish=True,
-            verbose=False,
-        )
-        if problem.status not in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
-            problem.solve(solver=cp.CLARABEL, verbose=False)
-    except cp.SolverError:
-        problem.solve(solver=cp.CLARABEL, verbose=False)
-
-
-def solve_fleet_with_fallback(problem: cp.Problem) -> None:
-    """Use CLARABEL first for the optional fleet QPs; it is more stable on tight fleet cases."""
-    try:
-        problem.solve(solver=cp.CLARABEL, verbose=False)
-    except cp.SolverError:
-        problem.solve(
-            solver=cp.OSQP,
-            eps_abs=1.0e-6,
-            eps_rel=1.0e-6,
-            max_iter=50000,
-            polish=False,
-            verbose=False,
-        )
-
-
-def solve_conic_with_fallback(problem: cp.Problem) -> None:
-    installed = set(cp.installed_solvers())
-    clarabel_status = None
-    try:
-        problem.solve(solver=cp.CLARABEL, verbose=False)
-        clarabel_status = problem.status
-        if problem.status == cp.OPTIMAL:
-            return
-    except cp.SolverError:
-        clarabel_status = None
-
-    if cp.GUROBI in installed:
-        try:
-            problem.solve(solver=cp.GUROBI, verbose=False)
-            if problem.status == cp.OPTIMAL:
-                return
-        except cp.SolverError:
-            pass
-
-    if clarabel_status == cp.OPTIMAL_INACCURATE:
-        return
-    problem.solve(solver=cp.SCS, eps=1.0e-5, max_iters=50000, verbose=False)
-
-
-def solve_mixed_integer_with_fallback(problem: cp.Problem, time_limit_sec: float | None = None) -> None:
-    installed = set(cp.installed_solvers())
-    for solver in (cp.GUROBI, cp.CPLEX, cp.SCIPY):
-        if solver not in installed:
-            continue
-        try:
-            if solver == cp.GUROBI:
-                gurobi_options = {
-                    "solver": solver,
-                    "verbose": False,
-                    "MIPGap": 1.0e-8,
-                    "FeasibilityTol": 1.0e-8,
-                    "IntFeasTol": 1.0e-8,
-                    "OptimalityTol": 1.0e-8,
-                }
-                if time_limit_sec is not None:
-                    gurobi_options["TimeLimit"] = float(time_limit_sec)
-                problem.solve(**gurobi_options)
-            elif solver == cp.CPLEX:
-                problem.solve(solver=solver, verbose=False)
-            else:
-                problem.solve(solver=solver, verbose=False, scipy_options={"method": "highs"})
-            if problem.status in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}:
-                return
-        except cp.SolverError:
-            continue
-    raise cp.SolverError("No working mixed-integer solver found")
+        problem.solve(solver=cp.CPLEX, cplex_params=parameters, reoptimize=True)
+    except cp.SolverError as error:
+        raise cp.SolverError(
+            "IBM CPLEX could not complete the solve. Check the original solver error "
+            "and the Python runtime license; the full fleet exceeds Community Edition limits."
+        ) from error
 
 
 def monte_carlo_violation(data: EVData, solution: dict, delta: float, samples: int = 10000) -> dict:
@@ -1596,6 +1538,7 @@ def row_from_solution(data: EVData, solution: dict, delta: float) -> dict:
         "policy_label": solution["policy_label"],
         "delta": delta,
         "status": solution["status"],
+        "solver": solution["solver"],
         "objective": solution.get("objective", np.nan),
         "economic_cost": solution.get("economic_cost", np.nan),
         "load_penalty": solution.get("load_penalty", np.nan),
@@ -1635,6 +1578,7 @@ def row_from_fleet_solution(data: FleetData, solution: dict, delta: float) -> di
         "epsilon": solution.get("epsilon", np.nan),
         "delta": delta,
         "status": solution["status"],
+        "solver": solution["solver"],
         "objective": solution.get("objective", np.nan),
         "economic_cost": solution.get("economic_cost", np.nan),
         "load_penalty": solution.get("load_penalty", np.nan),
@@ -2491,10 +2435,8 @@ def runtime_environment_frame() -> pd.DataFrame:
             ("CVXPY", cp.__version__),
             ("NumPy", np.__version__),
             ("Pandas", pd.__version__),
-            ("OSQP", package_version("osqp")),
-            ("CLARABEL", package_version("clarabel")),
-            ("SCS", package_version("scs")),
-            ("Installed solvers", ", ".join(cp.installed_solvers())),
+            ("Solver", "IBM ILOG CPLEX"),
+            ("CPLEX Python API", package_version("cplex")),
             ("Processor", platform.processor() or "not reported"),
         ],
         columns=["item", "value"],

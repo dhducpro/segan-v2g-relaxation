@@ -1,0 +1,43 @@
+{
+  "version": "22.1.2.0",
+  "python": "3.13.2",
+  "archive_hash": "a8405cae2d694f1a10da67be5ee8b7eda53b445ff3ef985bda47848aef2d7ae2",
+  "profile_hash": "885c0bb4ef892138fb67339f0b1d37bf164c7ef933399f6c2b9db0b089bd0f79",
+  "pairs": 12,
+  "qp_status": [
+    "optimal"
+  ],
+  "miqp_status": [
+    "integer optimal solution"
+  ],
+  "maxima": {
+    "gap": 8.789129424258135e-10,
+    "charge_l1": 9.12711167815705e-08,
+    "discharge_l1": 6.511593001566833e-08,
+    "qp_simultaneous": 1.6102190790743103e-09,
+    "miqp_simultaneous": 0.0,
+    "qp_residual": 4.241120230713911e-14,
+    "miqp_residual": 5.3290705182007514e-14,
+    "vs_old_qp": 8.789129424258135e-10
+  },
+  "cplex_threads": 1,
+  "time_limit_seconds": 60.0,
+  "feasibility_tolerance": 1e-09,
+  "optimality_tolerance": 1e-09,
+  "integrality_tolerance": 1e-09,
+  "barrier_convergence_tolerance": 1e-11,
+  "relative_mip_gap": 1e-10,
+  "absolute_mip_gap": 1e-09,
+  "delta": 0.5,
+  "objective": "Market payment, grid-side throughput charge and squared net station load at one-hour intervals.",
+  "paired_gap": "Absolute difference in full objectives recomputed from the returned power schedules.",
+  "overlap": "Maximum across slots of min(charge, discharge) in kW, clipped below at zero.",
+  "source_paths": {
+    "archive": "notebooks/ev_robust_charging.py",
+    "profile": "data/opsd_de_lu_2019_01_24_profile.csv",
+    "archive_comparison": "checks/q1_binary_complementarity_summary.csv"
+  },
+  "solver_type": "IBM ILOG CPLEX Python API, continuous QP and binary MIQP",
+  "archive_comparison_sha256": "1de09b2b9598eb9eb49bd920d7236766a09803428d0815772ee4587dfa60af81",
+  "script_sha256": "f66fe284b7a6255d6d335cfb6e91f34bb120b78b36e67e9af0d2bbf850d1218c"
+}

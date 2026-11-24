@@ -3,13 +3,11 @@ pandas==2.2.3
 scipy==1.17.1
 matplotlib==3.10.0
 cplex==22.1.2.1
+docplex>=2.29.245,<3
+cvxpy>=1.7.4,<2
 psutil==6.1.1
+filelock>=3.20,<4
 pytest==9.2.0
-nbformat==5.10.4
-nbclient==0.10.4
 ipykernel==6.29.5
 ipython==8.32.0
-pymupdf==1.28.2
-cvxpy==1.9.1
-osqp==1.0.5
-tzdata; sys_platform == 'win32'
+tzdata; sys_platform == "win32"

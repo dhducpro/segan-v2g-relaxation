@@ -39,12 +39,13 @@
   "versions": {
     "numpy": "2.2.6",
     "pandas": "2.2.3",
-    "CVXPY_imported": "1.9.1",
-    "CVXPY_distribution_metadata": "1.7.4",
-    "OSQP_imported": "1.0.5"
+    "cvxpy": "1.9.1",
+    "cplex_engine": "22.1.2.0"
   },
   "solver_names_observed": [
-    "OSQP"
+    "CPLEX"
   ],
-  "original_model_sha256": "1a24bc0379e4a2238eca4f102024592f73829f6626531e75ddf320680c8d9f8a"
+  "max_objective_recompute_error": 1.1847225778183201e-07,
+  "objective": "Market, grid-side throughput and smoothing components are computed from the same returned power schedule. The solver objective and absolute recomputation difference are also recorded.",
+  "original_model_sha256": "a8405cae2d694f1a10da67be5ee8b7eda53b445ff3ef985bda47848aef2d7ae2"
 }

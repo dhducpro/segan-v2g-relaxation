@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "unique_recorded_solves_checked": 3108,
+  "datasets": [
+    {
+      "dataset": "historical",
+      "rows": 722,
+      "classification": {
+        "certified_exact": 711,
+        "observed_exact_uncertified": 9,
+        "positive_value_gap": 2
+      }
+    },
+    {
+      "dataset": "sensitivity",
+      "rows": 240,
+      "classification": {
+        "certified_exact": 122,
+        "observed_exact_uncertified": 66,
+        "positive_value_gap": 52
+      }
+    },
+    {
+      "dataset": "boundaries",
+      "rows": 40,
+      "classification": {
+        "certified_exact": 17,
+        "observed_exact_uncertified": 15,
+        "positive_value_gap": 4,
+        "relaxation_infeasible_or_error": 3,
+        "infeasibility_masked": 1
+      }
+    },
+    {
+      "dataset": "runtime",
+      "rows": 30,
+      "classification": {
+        "certified_exact": 30
+      }
+    },
+    {
+      "dataset": "calibration",
+      "rows": 726,
+      "all_optimal": true
+    },
+    {
+      "dataset": "fleet_reliability",
+      "rows": 240,
+      "all_optimal": true
+    },
+    {
+      "dataset": "degradation",
+      "rows": 216,
+      "all_optimal": true
+    }
+  ],
+  "max_recomputed_constraint_residual": 3.333239968483781e-07,
+  "max_objective_recompute_error": 5.149472599441651e-07,
+  "chronological_split_disjoint": true,
+  "all_references_cited": null,
+  "note": "Numerical optimality is assessed using solver tolerances."
+}

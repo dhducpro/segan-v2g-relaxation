@@ -1,14 +1,33 @@
-# Reliability-aware vehicle-to-grid scheduling
+# Reliability-aware V2G scheduling
 
-This repository accompanies *Reliability-Aware Vehicle-to-Grid Scheduling: Applicability and Limits of Exact Convex Relaxation*. The code compares relaxed and binary charging schedules under station charging, import and export limits. The station experiments run on the included OPSD profiles. Fleet experiments use a Caltech ACN-Data session export supplied by the reader.
+This project compares relaxed and binary schedules for electric-vehicle charging and discharging. All optimization models use IBM ILOG CPLEX.
 
-| Task | Where to start |
-| --- | --- |
-| Install dependencies, run the station controls or reproduce fleet results | [Reproduction guide](REPRODUCE.md) |
-| Obtain and format the inputs | [Data sources](data/README.md) |
-| Inspect the station model and run experiments | [Model](revision_model.py) · [Experiment driver](run_revision_experiments.py) |
-| Recheck the 12 original binary comparisons and the fixed-schedule calibration | [Original-design check scripts and reference outputs](review_guide/checks/) |
-| Inspect the original single-EV and fleet experiments | [Notebooks and original model](revision/original/) |
-| Compare aggregate results | [Daily calibration](revision/results/calibration_summary.csv) · [Fleet reliability](revision/results/fleet_summary.csv) · [Throughput costs](revision/results/degradation_summary.csv) · [Solver performance](revision/results/runtime_summary.csv) |
+## Run
 
-The repository contains the analysis code, OPSD profiles and selected reference summaries. Running the experiments locally generates the detailed results, schedules and solver logs.
+Use Python 3.13 and a licensed copy of CPLEX Studio 22.1.2. Activate your Python environment, then configure the executable and Python runtime. These PowerShell commands assume the standard Windows installation path. [IBM setup guide](https://www.ibm.com/docs/en/icos/22.1.2?topic=rnco2-cplex-python-api-now-installed-using-pip-conda)
+
+```powershell
+$studio = 'C:\Program Files\IBM\ILOG\CPLEX_Studio2212'
+$env:CPLEX_EXE = Join-Path $studio 'cplex\bin\x64_win64\cplex.exe'
+python -m pip install -r requirements.txt
+docplex config --upgrade "$studio"
+```
+
+Run the Table 6 and Table 9 checks with the included OPSD station data.
+
+```sh
+python checks/original_table6_cplex.py
+python checks/matched_calibration.py
+```
+
+For the complete study, place your Caltech ACN-Data export at `caltech.csv` in the project root. The [data instructions](data/README.md) describe the required columns.
+
+```sh
+python run_revision_experiments.py
+python build_revision_artifacts.py
+python validate_revision.py
+```
+
+For selected stages, use e.g. `python run_revision_experiments.py --stages audit historical calibration`. The checks and experiments write to [results/](results/). Figures go to `results/figures/` and solver records to `runs/solves/`. The included runtime summary records the original CPLEX timings. Rerunning the benchmark measures your machine.
+
+The [original notebooks](notebooks/) use CVXPY to express the models and CPLEX to solve them. Run `python prepare_original_replay.py` and open the notebooks in the directory it prints. The [fleet notebook results](results/table8_capacity_tightness_frontier.csv) summarize the 20 seeds for each policy and capacity. Run the numerical tests with `python -m pytest -q test_revision.py`.
