@@ -1,0 +1,50 @@
+{
+  "base_day": "2019-01-24",
+  "base_schedule": "one fixed schedule per policy and protocol",
+  "profiles": "All inputs are cached 24-hour daily station baseloads scaled independently to [390,475].",
+  "original_protocol": "Per-hour percentile ranks over all 361 days, with average ranks for ties. The first 240 days calibrate the envelope.",
+  "corrected_protocol": "Per-hour frozen training ECDF on the first 96 profiles, using # training loads <= query / 96. The following 144 days calibrate the envelope.",
+  "corrected_training_dates": [
+    "2019-01-01",
+    "2019-04-10"
+  ],
+  "corrected_calibration_dates": [
+    "2019-04-11",
+    "2019-09-01"
+  ],
+  "shared_test_dates": [
+    "2019-09-02",
+    "2019-12-31"
+  ],
+  "coefficient_construction": "1.5 + 0.75 * percentile; scale = 0.75 at each hour.",
+  "score": "Maximum over 24 hours of (coefficient - 1.5) / 0.75.",
+  "measurement": "A day violates capacity if maximum L + u*charge - M exceeds 1e-6. A day has envelope coverage if every u <= envelope + 1e-12.",
+  "interpretation": "The train-only correction also changes calibration sample size and tie convention. It does not change the physical base day or scaled-load definition. Every daily load profile reaches 475, hence its maximum ECDF rank is 1; the corrected conformal and robust bands coincide by construction.",
+  "original_full_year_ranks": {
+    "calibration_days": 240,
+    "rank_one_based": 229,
+    "q": 0.9972299168975075,
+    "conformal_coefficient": 2.2479224376731306,
+    "calibration_scores_equal_to_one": 9,
+    "test_scores_equal_to_one": 4
+  },
+  "matched_train_only_ecdf": {
+    "calibration_days": 144,
+    "rank_one_based": 138,
+    "q": 1.0,
+    "conformal_coefficient": 2.25,
+    "calibration_scores_equal_to_one": 144,
+    "test_scores_equal_to_one": 121
+  },
+  "versions": {
+    "numpy": "2.2.6",
+    "pandas": "2.2.3",
+    "CVXPY_imported": "1.9.1",
+    "CVXPY_distribution_metadata": "1.7.4",
+    "OSQP_imported": "1.0.5"
+  },
+  "solver_names_observed": [
+    "OSQP"
+  ],
+  "original_model_sha256": "1a24bc0379e4a2238eca4f102024592f73829f6626531e75ddf320680c8d9f8a"
+}

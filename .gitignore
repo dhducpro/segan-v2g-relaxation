@@ -2,3 +2,13 @@ __pycache__/
 .pytest_cache/
 runs/
 revision/solves/
+/caltech.csv
+/SEGAN_Replication.zip
+/revision/instances/
+/revision/results/*
+!/revision/results/calibration_summary.csv
+!/revision/results/degradation_summary.csv
+!/revision/results/fleet_summary.csv
+!/revision/results/runtime_summary.csv
+/outputs/*
+!/outputs/q1_binary_complementarity_summary.csv

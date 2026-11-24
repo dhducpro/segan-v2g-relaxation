@@ -1,44 +1,53 @@
-# SEGAN replication package
+# Reproduce the scheduling experiments
 
-This package contains the data, models and outputs for the station scheduling experiments. Numbers assigned to tables in the original submission differ from those in the revision. The entries below identify each experiment by design.
+Run these commands from the repository root with Python 3.13. Install the Python dependencies first.
 
-## Install and run
+```text
+python -m pip install -r requirements.txt
+```
 
-Use Python 3.13 and install the packages with `python -m pip install -r requirements.txt`. For fresh revised-study solves, install a licensed IBM ILOG CPLEX 22.1.2.0 executable and set `CPLEX_EXE` to its full path. Its Python API writes native models and directly solves the original 12-pair control. The original fixed-schedule calibration check uses OSQP. The metadata in `review_guide/checks/` identifies each original-control solver.
+## Original single-EV checks
 
-Run these commands from the extracted directory.
+Both controls use the included OPSD profiles. The first uses the licensed IBM CPLEX Python API, and the second uses CVXPY with OSQP. Each command writes new results under `runs/`.
 
-    python validate_revision.py --results-only
-    python -m pytest -q -p no:dash test_revision.py
-    python build_revision_artifacts.py
-    python review_guide/checks/original_table6_cplex.py --project-root . --output-dir runs/check_table6
-    python review_guide/checks/matched_calibration.py . --output-dir runs/check_table9
+```text
+python review_guide/checks/original_table6_cplex.py --project-root . --output-dir runs/check_table6
+python review_guide/checks/matched_calibration.py . --output-dir runs/check_table9
+```
 
-The first command recomputes feasibility and objective values from 3,108 recorded solves and checks the chronological split. The third rebuilds the revised-study table fragments and figures from the recorded results. Compare the freshly produced CSVs in the two runs directories with the corresponding CSVs under `review_guide/checks/`. The imported versions in the calibration run were CVXPY 1.9.1 and OSQP 1.0.5. Metadata for the installed CVXPY distribution reported 1.7.4 on that machine.
+Compare the first result with [the 12 CPLEX pairs](review_guide/checks/original_table6_cplex_pairs.csv) and [the historical comparison](outputs/q1_binary_complementarity_summary.csv). The second result can be compared with [the fixed-schedule reference](review_guide/checks/matched_calibration_results.csv). It holds each policy's January 24 schedule fixed while testing 121 daily coefficient paths.
 
-To solve from scratch, extract a second copy of the archive and rename its `revision/solves` folder before the following commands. Wall times, memory readings and small floating-point differences can vary. To run a subset, append e.g. `--stages historical runtime` to the first command.
+## Revised station experiments
 
-    python run_revision_experiments.py
-    python build_revision_artifacts.py
-    python validate_revision.py --results-only
+For the revised optimization stages and numerical unit tests, install a licensed IBM ILOG CPLEX executable and set the environment variable `CPLEX_EXE` to its full path. The study used CPLEX 22.1.2.0. A PowerShell example is shown below.
 
-To rerun the archived independent-coefficient fleet experiment, run `python prepare_original_replay.py`. Open the second notebook in the printed directory and select **Run All** with the project Python environment in Jupyter. The first notebook contains the archived single-EV experiments. The original CVXPY implementation selects a supported installed solver by fallback. The dedicated 12-pair control above fixes the backend for every pair.
+```powershell
+$env:CPLEX_EXE = 'C:\Program Files\IBM\ILOG\CPLEX_Studio2212\cplex\bin\x64_win64\cplex.exe'
+```
 
-## Results and source mapping
+```text
+python -m pytest -q -p no:dash test_revision.py
+python run_revision_experiments.py --stages audit historical sensitivity boundaries calibration correlation degradation exchangeability
+```
 
-| Experiment | Source in this archive |
-| --- | --- |
-| Unclamped historical prices, tariff and throughput stress | `revision/results/price_audit.json`, `historical.csv`, `sensitivity.csv` |
-| PV and export limits | `revision/results/boundaries.csv` |
-| Original clamped-price single-EV control, 12 pairs | `review_guide/checks/original_table6_cplex.py`, CSV and JSON in the same directory, plus `outputs/q1_binary_complementarity_summary.csv` |
-| Original base-day market charge, throughput and smoothing | `outputs/summary.csv` |
-| Dependence and single-EV risk | `revision/results/correlation.csv` |
-| Fixed January 24 schedule, all-year ranks and training-only correction | `review_guide/checks/matched_calibration.py`, CSV and JSON in the same directory; the 361 daily profiles in `data/` |
-| Daily rescheduling on the raw-load proxy, fixed and rolling calibration | `revision/results/calibration.csv`, `calibration_summary.csv`, `calibration_split.json`, `exchangeable_control.json` |
-| Original independent-coefficient fleets, 20 samples, five margins | `revision/original/02_fleet_capacity_tightness_experiment.ipynb`, `outputs/fleet_capacity_tightness_raw.csv` |
-| Shared station disturbance and temporal correlation, four margins | `revision/results/fleet_reliability.csv`, `fleet_summary.csv` |
-| Throughput and matched runtime/memory controls | `revision/results/degradation.csv`, `degradation_summary.csv`, `runtime.csv`, `runtime_summary.csv` |
-| Model inputs, solve records, solver logs and schedules | `revision/instances/`, `revision/solves/<key>/` |
-| Revised-study tables and figures | `revision/tables/`, `revision/figures/` |
+The `calibration` stage solves each day's schedule anew. Compare its aggregate outputs with [the daily-rescheduling summary](revision/results/calibration_summary.csv). The [throughput summary](revision/results/degradation_summary.csv) corresponds to the separate degradation sensitivity stage.
 
-The compact Caltech export supplies session times and delivered energy. Vehicle and battery assumptions enter through the models. Data attribution and preprocessing are described in `data/README.md`. `revision/results/run_manifest.json` gives the original experiment environment and core hashes. `PACKAGE_MANIFEST.json` records the SHA-256 digest of each other file in the ZIP.
+## Fleet experiments
+
+Obtain the Caltech session data and save the three input fields to `caltech.csv` at the repository root, following the [data instructions](data/README.md). The revised fleet experiment uses a common station disturbance and the timing stage tests several fleet sizes and time grids.
+
+```text
+python run_revision_experiments.py --stages fleet runtime
+```
+
+The reference aggregates are [fleet reliability](revision/results/fleet_summary.csv) and [runtime and memory](revision/results/runtime_summary.csv). Sampling depends on the local session pool and its ordering. Running times and memory use depend on the machine. For the original independent-coefficient fleet design, run `python prepare_original_replay.py` and execute `02_fleet_capacity_tightness_experiment.ipynb` from the directory it prints.
+
+To generate all revised outputs in one run, provide the local session file, configure CPLEX, and run the following in order.
+
+```text
+python run_revision_experiments.py
+python build_revision_artifacts.py
+python validate_revision.py --results-only
+```
+
+The driver creates its detailed result files under `revision/results/`, fleet inputs under `revision/instances/` and a local solve cache under `revision/solves/`. The second command builds tables and figures from those outputs. The last command checks the resulting solver records and chronological split. A fresh checkout provides a clean timing run.

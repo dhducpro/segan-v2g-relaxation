@@ -213,7 +213,13 @@ def exchangeability():
 
 def acn_pool():
     """Fully contained sessions, exact fractional hourly availability; observed energy is AC-side."""
-    s=legacy.load_acn_sessions("caltech","2019-01-01","2019-03-31",2.,ROOT/"caltech.csv")
+    cache = ROOT / "caltech.csv"
+    if not cache.is_file():
+        raise FileNotFoundError(
+            f"The fleet and runtime stages require an ACN-Data Caltech session export at {cache}. "
+            "See data/README.md for the source and expected columns."
+        )
+    s=legacy.load_acn_sessions("caltech","2019-01-01","2019-03-31",2.,cache)
     st=legacy.parse_acn_timestamp(s.connectionTime,"America/Los_Angeles")
     en=legacy.parse_acn_timestamp(s.disconnectTime,"America/Los_Angeles")
     same=(st.dt.date==en.dt.date)&(en>st)&st.notna()&en.notna()
@@ -252,7 +258,9 @@ def fleet(N,seed,T=24,*,within_day=False):
                      float(max(base.L)+4*N),alpha=2e-4,dt=24/T)
     metadata={"case":d.name,"seed":seed,"N":N,"T":T,"date":date,"source":"same_day_sessions" if within_day else "resampled_session_templates",**info,
               "sessions":[{k:v for k,v in p.items() if k!="availability"} for p in picked]}
-    (ROOT/"revision/instances"/f"{d.name}.json").write_text(json.dumps({"metadata":metadata,"instance":model.serializable(d)},indent=2))
+    instances = ROOT / "revision" / "instances"
+    instances.mkdir(parents=True, exist_ok=True)
+    (instances / f"{d.name}.json").write_text(json.dumps({"metadata":metadata,"instance":model.serializable(d)},indent=2))
     return d
 
 
@@ -306,7 +314,9 @@ def runtime():
 
 
 def manifest():
-    files=["revision_model.py","run_revision_experiments.py","ev_robust_charging.py","caltech.csv","data/opsd_de_lu_2019.csv"]
+    files=["revision_model.py","run_revision_experiments.py","ev_robust_charging.py","data/opsd_de_lu_2019.csv"]
+    if (ROOT / "caltech.csv").is_file():
+        files.append("caltech.csv")
     info={"created_utc":pd.Timestamp.now(tz="UTC").isoformat(),"python":sys.version,"platform":platform.platform(),
           "processor":platform.processor(),"logical_cpus":psutil.cpu_count(),"ram_gb":psutil.virtual_memory().total/2**30,
           "cplex_exe":str(model.CPLEX_EXE),"cplex_version":"22.1.2.0","threads":1,"seed":SEED,

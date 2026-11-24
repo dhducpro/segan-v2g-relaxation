@@ -1,18 +1,14 @@
-# Reliability-aware V2G scheduling
+# Reliability-aware vehicle-to-grid scheduling
 
-Code, data and results for comparing relaxed and physical electric-vehicle charging and discharging schedules under station charging-capacity, net-import and export limits.
+This repository accompanies *Reliability-Aware Vehicle-to-Grid Scheduling: Applicability and Limits of Exact Convex Relaxation*. The code compares relaxed and binary charging schedules under station charging, import and export limits. The station experiments run on the included OPSD profiles. Fleet experiments use a Caltech ACN-Data session export supplied by the reader.
 
-[Download the full replication archive](SEGAN_Replication.zip?raw=true) · [Reproduction commands and result mapping](REPRODUCE.md)
-
-The archive contains the editable sources available here, the 361 daily input profiles, the original independent-coefficient fleet experiment, both original-design checks and the native solver records for all 3,108 revised-study solves. To verify the archived results or regenerate publication figures, extract the ZIP into an empty directory and run the commands in its README. New optimizations use IBM ILOG CPLEX 22.1.2.0. The original fixed-schedule calibration check uses OSQP.
-
-**Archive SHA-256**: 14714372e53c4dd0448691c7bad0e50a86000aa0dbcdacf8d45b2a3dcd5b2531
-
-| Locate | Files |
+| Task | Where to start |
 | --- | --- |
-| Revised model and experiments | [Model](revision_model.py), [experiments](run_revision_experiments.py), [unit tests](test_revision.py) |
-| Rebuild figures and summary tables | [Plot and table generation](build_revision_artifacts.py) |
-| Original solver and calibration checks | [12-pair CPLEX check](review_guide/checks/original_table6_cplex.py), [fixed-schedule calibration](review_guide/checks/matched_calibration.py) |
-| Original single-EV and fleet studies | [Archived notebooks](revision/original/), [recorded tables](outputs/) |
-| Revised raw results and summaries | [CSV and JSON results](revision/results/), [fleet instances](revision/instances/) |
-| OPSD and ACN-Data | [Input sources, transformations and attribution](data/README.md) |
+| Install dependencies, run the station controls or reproduce fleet results | [Reproduction guide](REPRODUCE.md) |
+| Obtain and format the inputs | [Data sources](data/README.md) |
+| Inspect the station model and run experiments | [Model](revision_model.py) · [Experiment driver](run_revision_experiments.py) |
+| Recheck the 12 original binary comparisons and the fixed-schedule calibration | [Original-design check scripts and reference outputs](review_guide/checks/) |
+| Inspect the original single-EV and fleet experiments | [Notebooks and original model](revision/original/) |
+| Compare aggregate results | [Daily calibration](revision/results/calibration_summary.csv) · [Fleet reliability](revision/results/fleet_summary.csv) · [Throughput costs](revision/results/degradation_summary.csv) · [Solver performance](revision/results/runtime_summary.csv) |
+
+The repository contains the analysis code, OPSD profiles and selected reference summaries. Running the experiments locally generates the detailed results, schedules and solver logs.

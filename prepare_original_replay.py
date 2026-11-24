@@ -23,7 +23,9 @@ def main():
         "ev_robust_charging.py",
     ):
         copy2(original / name, replay / name)
-    copy2(root / "caltech.csv", replay / "caltech.csv")
+    acn_cache = root / "caltech.csv"
+    if acn_cache.is_file():
+        copy2(acn_cache, replay / acn_cache.name)
     for folder in ("data", "outputs"):
         copytree(root / folder, replay / folder)
     print(replay)

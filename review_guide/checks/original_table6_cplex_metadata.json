@@ -1,0 +1,44 @@
+{
+  "version": "22.1.2.0",
+  "python": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+  "archive_hash": "1a24bc0379e4a2238eca4f102024592f73829f6626531e75ddf320680c8d9f8a",
+  "profile_hash": "885c0bb4ef892138fb67339f0b1d37bf164c7ef933399f6c2b9db0b089bd0f79",
+  "pairs": 12,
+  "qp_status": [
+    "optimal"
+  ],
+  "miqp_status": [
+    "integer optimal solution"
+  ],
+  "maxima": {
+    "gap": 8.789129424258135e-10,
+    "charge_l1": 9.12711167815705e-08,
+    "discharge_l1": 6.511593001566833e-08,
+    "qp_simultaneous": 1.6102190790743103e-09,
+    "miqp_simultaneous": 0.0,
+    "qp_residual": 4.241120230713911e-14,
+    "miqp_residual": 5.3290705182007514e-14,
+    "vs_old_qp": 8.789129424258135e-10
+  },
+  "cplex_threads": 1,
+  "time_limit_seconds": 60,
+  "feasibility_tolerance": 1e-09,
+  "optimality_tolerance": 1e-09,
+  "integrality_tolerance": 1e-09,
+  "barrier_convergence_tolerance": 1e-11,
+  "relative_mip_gap": 1e-10,
+  "absolute_mip_gap": 1e-09,
+  "objective": "Sum of market payment, grid throughput penalty and squared net station load per hourly slot",
+  "paired_gap": "Absolute difference of full objectives recomputed from raw charging and discharging values",
+  "overlap": "Max over slots of min(charge,discharge), clipped below at zero, in kW",
+  "source_paths": {
+    "archive": "revision\\original\\ev_robust_charging.py",
+    "profile": "data\\opsd_de_lu_2019_01_24_profile.csv",
+    "archive_comparison": "outputs/q1_binary_complementarity_summary.csv"
+  },
+  "solver_type": "Native CPLEX Python API; convex QP and MIQP with physical binary bounds",
+  "delta": 0.5,
+  "archive_comparison_sha256": "1de09b2b9598eb9eb49bd920d7236766a09803428d0815772ee4587dfa60af81",
+  "script_sha256": "c67b963d03aabaa5706c0ae02548e79fcae296d4fd682ad5d328e38c8e691c27",
+  "run_utc": "2026-11-24T03:56:12.227207+00:00"
+}
