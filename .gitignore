@@ -17,3 +17,7 @@ runs/
 !/results/matched_calibration_metadata.json
 !/results/table8_capacity_tightness_frontier.csv
 !/results/validation.json
+!/results/fleet_capacity_tightness_raw.csv
+!/results/q1_baseline_policy_rerun.csv
+!/results/multi_day_benchmark_delta_50.csv
+!/results/q1_theorem_condition_ablation.csv
